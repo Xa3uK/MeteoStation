@@ -17,9 +17,7 @@ public class SensorService {
     }
 
     @Transactional
-    public ResponseEntity<HttpStatus> save(Sensor sensor){
+    public void save(Sensor sensor){
         sensorRepository.save(sensor);
-
-        return ResponseEntity.ok(HttpStatus.OK);
     }
 }

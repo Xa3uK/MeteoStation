@@ -21,13 +21,9 @@ public class SensorController {
     }
 
     @PostMapping("/registration")
-    public void registration(@RequestBody Sensor sensor) {
-        System.out.println(sensor);
+    public ResponseEntity<HttpStatus> registration(@RequestBody Sensor sensor) {
         sensorService.save(sensor);
-    }
 
-    @GetMapping("/test")
-    public ResponseEntity test(){
-        return new ResponseEntity(HttpStatus.OK);
+        return ResponseEntity.ok(HttpStatus.OK);
     }
 }
