@@ -1,5 +1,6 @@
 package org.fishbone.sensor.controller;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import javax.validation.Valid;
 import org.fishbone.sensor.dto.MeasurementDto;
@@ -50,11 +51,7 @@ public class MeasurementController {
             throw new MeasurementNotCreatedException("This sensor not found. Try register sensor first");
         }
 
-        System.out.println(measurement);
-        measurementService.save(new Measurement(
-            Boolean.parseBoolean(measurement.getRaining()),
-            measurement.getValue(),
-            measurement.getSensor().getName()));
+        measurementService.save(measurement);
 
         return ResponseEntity.ok(HttpStatus.OK);
     }

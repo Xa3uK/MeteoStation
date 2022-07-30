@@ -1,5 +1,6 @@
 package org.fishbone.sensor.model;
 
+import java.time.LocalDateTime;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -31,9 +32,13 @@ public class Measurement {
     @Column(name = "sensor_name")
     private String sensorName;
 
-    public Measurement(boolean raining, double temperature, String sensorName) {
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    public Measurement(boolean raining, double temperature, String sensorName, LocalDateTime createdAt) {
         this.raining = raining;
         this.temperature = temperature;
         this.sensorName = sensorName;
+        this.createdAt = createdAt;
     }
 }
