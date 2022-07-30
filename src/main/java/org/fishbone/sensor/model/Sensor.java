@@ -24,4 +24,8 @@ public class Sensor {
 
     @Column(name = "name")
     private String name;
+
+    public Sensor(String name) {
+        this.name = name;
+    }
 }

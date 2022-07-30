@@ -1,13 +1,13 @@
 package org.fishbone.sensor.controller;
 
+import java.util.List;
 import org.fishbone.sensor.dto.MeasurementDto;
 import org.fishbone.sensor.model.Measurement;
-import org.fishbone.sensor.model.Sensor;
 import org.fishbone.sensor.service.MeasurementService;
 import org.fishbone.sensor.service.SensorService;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,9 +28,22 @@ public class MeasurementController {
 
         measurementService.save(new Measurement(
             measurement.isRaining(),
-            measurement.getTemperature(),
+            measurement.getValue(),
             measurement.getSensor().getName()));
 
         return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    @GetMapping
+    public List<Measurement> getAll() {
+        return measurementService.findAll();
+    }
+
+    @GetMapping("/rainyDaysCount")
+    public int getRainyDays() {
+        return (int) measurementService.findAll()
+            .stream()
+            .filter(Measurement::isRaining)
+            .count();
     }
 }

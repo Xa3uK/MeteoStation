@@ -11,6 +11,6 @@ import org.fishbone.sensor.model.Sensor;
 public class MeasurementDto {
 
     private boolean raining;
-    private double temperature;
+    private double value;
     private Sensor sensor;
 }
