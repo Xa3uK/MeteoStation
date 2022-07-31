@@ -2,6 +2,7 @@ package org.fishbone.sensor.controller;
 
 import static org.fishbone.sensor.util.ErrorsUtil.returnErrors;
 
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import org.fishbone.sensor.dto.MeasurementDto;
 import org.fishbone.sensor.model.Measurement;
@@ -12,6 +13,7 @@ import org.fishbone.sensor.util.MeasurementErrorResponse;
 import org.fishbone.sensor.util.MeasurementException;
 import org.fishbone.sensor.util.MeasurementValidator;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -31,13 +33,16 @@ public class MeasurementController {
     ModelMapper modelMapper;
     MeasurementValidator measurementValidator;
 
+    @Autowired
     public MeasurementController(MeasurementService measurementService, SensorService sensorService,
                                  ModelMapper modelMapper, MeasurementValidator measurementValidator) {
         this.measurementService = measurementService;
         this.sensorService = sensorService;
         this.modelMapper = modelMapper;
-        this.modelMapper.typeMap(MeasurementDto.class, Measurement.class).addMapping(MeasurementDto::getValue,
-            Measurement::setTemperature);
+        this.modelMapper.typeMap(MeasurementDto.class, Measurement.class)
+            .addMapping(MeasurementDto::getValue, Measurement::setTemperature);
+        this.modelMapper.typeMap(Measurement.class, MeasurementDto.class)
+            .addMapping(Measurement::getTemperature, MeasurementDto::setValue);
         this.measurementValidator = measurementValidator;
     }
 
@@ -59,7 +64,10 @@ public class MeasurementController {
 
     @GetMapping
     public MeasurementResponse getAll() {
-        return new MeasurementResponse(measurementService.findAll());
+        return new MeasurementResponse(measurementService.findAll()
+            .stream()
+            .map(this::measurementToDto).collect(
+                Collectors.toList()));
     }
 
     @GetMapping("/rainyDaysCount")
@@ -81,5 +89,9 @@ public class MeasurementController {
 
     private Measurement dtoToMeasurement(MeasurementDto dto) {
         return modelMapper.map(dto, Measurement.class);
+    }
+
+    private MeasurementDto measurementToDto(Measurement measurement) {
+        return modelMapper.map(measurement, MeasurementDto.class);
     }
 }

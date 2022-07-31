@@ -7,7 +7,6 @@ import javax.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.fishbone.sensor.model.Sensor;
 
 @Data
 @AllArgsConstructor
