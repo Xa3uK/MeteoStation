@@ -1,18 +1,20 @@
 package org.fishbone.sensor.controller;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import static org.fishbone.sensor.util.ErrorsUtil.returnErrors;
+
 import javax.validation.Valid;
 import org.fishbone.sensor.dto.MeasurementDto;
 import org.fishbone.sensor.model.Measurement;
+import org.fishbone.sensor.model.MeasurementResponse;
 import org.fishbone.sensor.service.MeasurementService;
 import org.fishbone.sensor.service.SensorService;
 import org.fishbone.sensor.util.MeasurementErrorResponse;
-import org.fishbone.sensor.util.MeasurementNotCreatedException;
+import org.fishbone.sensor.util.MeasurementException;
+import org.fishbone.sensor.util.MeasurementValidator;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,55 +28,58 @@ public class MeasurementController {
 
     MeasurementService measurementService;
     SensorService sensorService;
+    ModelMapper modelMapper;
+    MeasurementValidator measurementValidator;
 
-    public MeasurementController(MeasurementService measurementService, SensorService sensorService) {
+    public MeasurementController(MeasurementService measurementService, SensorService sensorService,
+                                 ModelMapper modelMapper, MeasurementValidator measurementValidator) {
         this.measurementService = measurementService;
         this.sensorService = sensorService;
+        this.modelMapper = modelMapper;
+        this.modelMapper.typeMap(MeasurementDto.class, Measurement.class).addMapping(MeasurementDto::getValue,
+            Measurement::setTemperature);
+        this.measurementValidator = measurementValidator;
     }
 
     @PostMapping("/add")
-    public ResponseEntity<HttpStatus> add(@RequestBody @Valid MeasurementDto measurement,
+    public ResponseEntity<HttpStatus> add(@RequestBody @Valid MeasurementDto measurementDto,
                                           BindingResult bindingResult) {
+        Measurement measurementToAdd = dtoToMeasurement(measurementDto);
+
+        measurementValidator.validate(measurementToAdd, bindingResult);
 
         if (bindingResult.hasErrors()) {
-            StringBuilder errorMsg = new StringBuilder();
-
-            List<FieldError> errors = bindingResult.getFieldErrors();
-            for (FieldError error : errors) {
-                errorMsg.append(error.getField())
-                    .append(" - ").append(error.getDefaultMessage())
-                    .append(";");
-            }
-            throw new MeasurementNotCreatedException(errorMsg.toString());
-        }
-        if (sensorService.findByName(measurement.getSensor().getName()) == null) {
-            throw new MeasurementNotCreatedException("This sensor not found. Try register sensor first");
+            returnErrors(bindingResult);
         }
 
-        measurementService.save(measurement);
+        measurementService.save(measurementToAdd);
 
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
     @GetMapping
-    public List<Measurement> getAll() {
-        return measurementService.findAll();
+    public MeasurementResponse getAll() {
+        return new MeasurementResponse(measurementService.findAll());
     }
 
     @GetMapping("/rainyDaysCount")
-    public int getRainyDays() {
-        return (int) measurementService.findAll()
+    public long getRainyDays() {
+        return measurementService.findAll()
             .stream()
             .filter(Measurement::isRaining)
             .count();
     }
 
     @ExceptionHandler
-    private ResponseEntity<MeasurementErrorResponse> handleException(MeasurementNotCreatedException e) {
+    private ResponseEntity<MeasurementErrorResponse> handleException(MeasurementException e) {
         MeasurementErrorResponse response = new MeasurementErrorResponse(
             e.getMessage(),
             System.currentTimeMillis()
         );
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    private Measurement dtoToMeasurement(MeasurementDto dto) {
+        return modelMapper.map(dto, Measurement.class);
     }
 }

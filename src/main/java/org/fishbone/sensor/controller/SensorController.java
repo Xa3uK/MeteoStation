@@ -1,19 +1,19 @@
 package org.fishbone.sensor.controller;
 
-import java.util.List;
+import static org.fishbone.sensor.util.ErrorsUtil.returnErrors;
+
 import javax.validation.Valid;
 import org.fishbone.sensor.dto.SensorDto;
 import org.fishbone.sensor.model.Sensor;
 import org.fishbone.sensor.service.SensorService;
-import org.fishbone.sensor.util.SensorDuplicateException;
-import org.fishbone.sensor.util.SensorErrorResponse;
-import org.fishbone.sensor.util.SensorNotCreatedException;
+import org.fishbone.sensor.util.MeasurementErrorResponse;
+import org.fishbone.sensor.util.MeasurementException;
+import org.fishbone.sensor.util.SensorValidator;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,46 +24,40 @@ import org.springframework.web.bind.annotation.RestController;
 public class SensorController {
 
     SensorService sensorService;
+    SensorValidator sensorValidator;
+    ModelMapper modelMapper;
 
-    public SensorController(SensorService sensorService) {
+    public SensorController(SensorService sensorService, SensorValidator sensorValidator, ModelMapper modelMapper) {
         this.sensorService = sensorService;
+        this.sensorValidator = sensorValidator;
+        this.modelMapper = modelMapper;
     }
 
     @PostMapping("/registration")
-    public ResponseEntity<HttpStatus> registration(@RequestBody @Valid SensorDto sensor,
+    public ResponseEntity<HttpStatus> registration(@RequestBody @Valid SensorDto sensorDto,
                                                    BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            StringBuilder errorMsg = new StringBuilder();
+        Sensor sensorToAdd = dtoToSensor(sensorDto);
+        sensorValidator.validate(sensorToAdd, bindingResult);
 
-            List<FieldError> errors = bindingResult.getFieldErrors();
-            for (FieldError error : errors){
-                errorMsg.append(error.getField())
-                    .append( " - ").append(error.getDefaultMessage())
-                    .append(";");
-            }
-            throw new SensorNotCreatedException(errorMsg.toString());
+        if (bindingResult.hasErrors()) {
+            returnErrors(bindingResult);
         }
 
-        sensorService.save(new Sensor(sensor.getName()));
+        sensorService.save(sensorToAdd);
 
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
     @ExceptionHandler
-    private ResponseEntity<SensorErrorResponse> handleException(SensorDuplicateException e) {
-        SensorErrorResponse response = new SensorErrorResponse(
-            "This sensor already registered",
+    private ResponseEntity<MeasurementErrorResponse> handleException(MeasurementException e) {
+        MeasurementErrorResponse response = new MeasurementErrorResponse(
+            e.getMessage(),
             System.currentTimeMillis()
         );
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler
-    private ResponseEntity<SensorErrorResponse> handleException(SensorNotCreatedException e) {
-        SensorErrorResponse response = new SensorErrorResponse(
-            e.getMessage(),
-            System.currentTimeMillis()
-        );
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    private Sensor dtoToSensor(SensorDto dto) {
+        return modelMapper.map(dto, Sensor.class);
     }
 }

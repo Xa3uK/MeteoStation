@@ -13,19 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class MeasurementService {
 
     MeasurementRepository measurementRepository;
+    SensorService sensorService;
 
-    public MeasurementService(MeasurementRepository measurementRepository) {
+    public MeasurementService(MeasurementRepository measurementRepository, SensorService sensorService) {
         this.measurementRepository = measurementRepository;
+        this.sensorService = sensorService;
     }
 
     @Transactional
-    public void save(MeasurementDto measurement) {
-
-        measurementRepository.save(new Measurement(
-            Boolean.parseBoolean(measurement.getRaining()),
-            measurement.getValue(),
-            measurement.getSensor().getName(),
-            LocalDateTime.now()));
+    public void save(Measurement measurement) {
+        measurement.setSensor(sensorService.findByName(measurement.getSensor().getName()));
+        measurement.setCreatedAt(LocalDateTime.now());
+        measurementRepository.save(measurement);
     }
 
     public List<Measurement> findAll() {

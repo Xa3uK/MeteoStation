@@ -24,5 +24,6 @@ public class MeasurementDto {
     private Double value;
 
     @NotNull(message = "Field Sensor should be not empty")
-    private Sensor sensor;
+//    private Sensor sensor;
+    private SensorDto sensor;
 }
